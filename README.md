@@ -1,0 +1,2 @@
+## Abstract
+We fine-tune a small CNN (<50 layers) to improve performance on the class with the lowest precision in the baseline evaluation. Using targeted augmentation, class-balanced sampling, and hyperparameter tuning, we achieve X% precision (+Δ% vs. baseline) on the challenging class while maintaining overall accuracy. Framework: PyTorch (version X.Y). We build on [paper/code: cite here] and attribute all sources accordingly.
