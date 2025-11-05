@@ -7,3 +7,12 @@
 We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a baseline, identify the lowest-precision (most challenging) class from the confusion matrix, and fine-tune the model using class-focused sampling and mild augmentations. We report before/after precision for the target class, overall accuracy, curves, and qualitative samples. Code is fully reproducible via `requirements.txt` (or `env.yml`) and deterministic seeds.
 
 ## Repository Layout
+
+### Results (baseline vs targeted fine-tune)
+
+| Run        | Val Acc | Worst Class | Precision (worst) |
+|------------|---------|-------------|-------------------|
+| Baseline   | 0.6381  | deer        | 0.541             |
+| Fine-tuned | <fill>  | deer        | <fill>            |
+
+See `results/*curves.png`, `results/*confusion_matrix.png`, and `results/samples_*`.
