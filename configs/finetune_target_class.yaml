@@ -1,8 +1,9 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# Fine-tune configuration: focus the worst class from baseline (e.g., deer)
+# Fine-tune config focused on the worst class from baseline (bird for you).
+# Self-contained: repeats dataset/train/optim/etc. so no inheritance needed.
 # ──────────────────────────────────────────────────────────────────────────────
 seed: 42
-project_name: "finetune_target"
+project_name: "finetune-bird"
 
 dataset:
   name: "cifar10"
@@ -10,24 +11,23 @@ dataset:
   num_workers: 2
 
 train:
-  epochs: 3
+  epochs: 5               # bump to 8–10 if you want a bit more squeeze on CPU
   batch_size: 128
-  label_smoothing: 0.05
-  freeze_backbone: true
-  early_stopping_patience: 2
+  label_smoothing: 0.0
+  freeze_backbone: true   # start with frozen backbone; can try false later
 
 optim:
   name: "adam"
-  lr: 0.0005
+  lr: 0.0005              # a bit smaller than baseline for fine-tuning
   weight_decay: 0.0001
 
 target:
-  focus_class: "deer"       # <- set this to the worst class from baseline
+  focus_class: "bird"     # set to your worst class from baseline
   oversample: true
-  oversample_factor: 4.0
+  oversample_factor: 4.0  # try 6.0 if bird precision doesn’t improve enough
 
 checkpoint:
-  init: "results/best.pt"         # warm start from baseline
+  init: "results/best.pt"        # warm start from baseline
   best_path: "results/best_finetune.pt"
 
 output:

@@ -1,0 +1,6 @@
+{
+  "project": "finetune-bird",
+  "best_val_acc": 0.714453125,
+  "epochs_ran": 5,
+  "seed": 42
+}
