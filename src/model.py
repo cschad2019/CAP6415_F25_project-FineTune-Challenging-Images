@@ -1,33 +1,24 @@
 """
-model.py
-────────
-Model factory: builds a small CNN backbone (< 50 layers).
-Default: ResNet-18 from torchvision with a replaced classification head.
+model.py — Small ResNet-18-style backbone for CIFAR-10 with freeze_backbone support.
+
+We adapt torchvision's resnet18 to CIFAR-10 by:
+- Replacing the first conv (7x7, stride 2) with 3x3, stride 1
+- Removing the maxpool
+- Replacing the final fc to output 10 classes
 """
-
 import torch.nn as nn
-from torchvision import models
+from torchvision.models import resnet18
 
-def build_model(num_classes: int = 10, pretrained: bool = False, freeze_backbone: bool = False):
-    """
-    Build a ResNet-18 classifier.
-    - pretrained=False to avoid network downloads by default.
-    - If freeze_backbone=True, we freeze all feature extractor params.
-    """
-    # torchvision >=0.13 uses Weights enums; keep it robust:
-    weights = None
-    if pretrained:
-        try:
-            weights = models.ResNet18_Weights.DEFAULT
-        except AttributeError:
-            weights = "IMAGENET1K_V1"  # older torch compat fallback
+def build_model(num_classes: int = 10, pretrained: bool = False, freeze_backbone: bool = False) -> nn.Module:
+    m = resnet18(weights=None if not pretrained else "IMAGENET1K_V1")
+    # CIFAR-10 friendly stem
+    m.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
+    m.maxpool = nn.Identity()
+    # Classifier
+    m.fc = nn.Linear(m.fc.in_features, num_classes)
 
-    model = models.resnet18(weights=weights)
     if freeze_backbone:
-        for p in model.parameters():
-            p.requires_grad = False
-
-    # Replace classification head
-    in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features, num_classes)
-    return model
+        for name, p in m.named_parameters():
+            if not name.startswith("fc."):
+                p.requires_grad = False
+    return m

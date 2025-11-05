@@ -1,0 +1,6 @@
+{
+  "project": "baseline",
+  "best_val_acc": 0.6806640625,
+  "epochs_ran": 3,
+  "seed": 42
+}

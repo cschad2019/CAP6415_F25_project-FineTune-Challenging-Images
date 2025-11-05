@@ -1,9 +1,12 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Baseline configuration: standard training (no class focusing)
+# ──────────────────────────────────────────────────────────────────────────────
 seed: 42
-project_name: baseline
+project_name: "baseline"
 
 dataset:
-  name: cifar10
-  data_dir: ./data
+  name: "cifar10"
+  data_dir: "./data"
   num_workers: 2
 
 train:
@@ -11,9 +14,10 @@ train:
   batch_size: 128
   label_smoothing: 0.0
   freeze_backbone: false
+  # early_stopping_patience: 2       # optional
 
 optim:
-  name: adam
+  name: "adam"
   lr: 0.001
   weight_decay: 0.0001
 
@@ -24,9 +28,9 @@ target:
 
 checkpoint:
   init: null
-  best_path: results/best.pt
+  best_path: "results/best.pt"
 
 output:
-  curves: results/curves.png
-  cm: results/confusion_matrix.png
-  samples_dir: results/samples
+  curves: "results/baseline_curves.png"
+  cm: "results/baseline_confusion_matrix.png"
+  samples_dir: "results/samples_baseline"
