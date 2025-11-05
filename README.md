@@ -1,2 +1,9 @@
+# Fine-tuning a Small Model for Challenging Test Images (CAP6415 F25)
+
+**Student:** Cale Schad (z23503021)  
+**Project:** Individual Project #8 — *Fine-tune a small model for challenging test images*  
+
 ## Abstract
- fine-tune a small CNN (<50 layers) to improve performance on the class with the lowest precision in the baseline evaluation. Using targeted augmentation, class-balanced sampling, and hyperparameter tuning,  achieve X% precision (+Δ% vs. baseline) on the challenging class while maintaining overall accuracy. Framework: PyTorch (version X.Y).  build on [paper/code: cite here] and attribute all sources accordingly.
+We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a baseline, identify the lowest-precision (most challenging) class from the confusion matrix, and fine-tune the model using class-focused sampling and mild augmentations. We report before/after precision for the target class, overall accuracy, curves, and qualitative samples. Code is fully reproducible via `requirements.txt` (or `env.yml`) and deterministic seeds.
+
+## Repository Layout

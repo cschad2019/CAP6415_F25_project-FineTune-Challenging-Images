@@ -1,0 +1,18 @@
+# ─── Python / Env / IDE ─────────────────────────────────────────────────────────
+__pycache__/
+*.pyc
+.venv/
+.env
+.ipynb_checkpoints/
+.vscode/
+
+# ─── Data / Artifacts ───────────────────────────────────────────────────────────
+data/
+checkpoints/
+outputs/
+
+# ─── Model / Media (use Git LFS if you need them in git) ───────────────────────
+*.pt
+*.pth
+*.ckpt
+*.mp4

@@ -1,0 +1,12 @@
+# Core DL stack
+torch
+torchvision
+torchaudio
+
+# Utils
+numpy
+matplotlib
+scikit-learn
+tqdm
+pyyaml
+pillow
