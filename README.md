@@ -13,8 +13,8 @@ We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a baseline, 
 
 | Run        | Val Acc | Worst Class | Precision (worst) |
 |------------|---------|-------------|-------------------|
-| Baseline   | **0.6381** | **deer**    | **0.541**         |
-| Fine-tuned | _fill_  | deer        | _fill_            |
+| Baseline   | 0.6807  | bird        | 0.410             |
+| Fine-tuned | _fill_  | bird        | _fill_            |
 
 See `results/*curves.png`, `results/*confusion_matrix.png`, and `results/samples_*`.
 
