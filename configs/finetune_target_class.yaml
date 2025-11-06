@@ -1,9 +1,9 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# Fine-tune config focused on the worst class from baseline (bird for you).
-# Self-contained: repeats dataset/train/optim/etc. so no inheritance needed.
+# Fine-tune config: focuses on the worst class from baseline ("bird").
+# Stronger aug, class oversampling, mixup, cosine LR, EMA. CPU-friendly.
 # ──────────────────────────────────────────────────────────────────────────────
 seed: 42
-project_name: "finetune-bird"
+project_name: "finetune_target"
 
 dataset:
   name: "cifar10"
@@ -11,23 +11,28 @@ dataset:
   num_workers: 2
 
 train:
-  epochs: 5               # bump to 8–10 if you want a bit more squeeze on CPU
+  epochs: 8                 # short but effective on CPU
   batch_size: 128
-  label_smoothing: 0.0
-  freeze_backbone: true   # start with frozen backbone; can try false later
+  label_smoothing: 0.05
+  freeze_backbone: false    # update the whole model
+  mixup_alpha: 0.2          # 0 to disable
+  grad_clip_norm: 1.0
+  ema_decay: 0.995          # 0 to disable
 
 optim:
-  name: "adam"
-  lr: 0.0005              # a bit smaller than baseline for fine-tuning
-  weight_decay: 0.0001
+  name: "adamw"
+  lr: 0.0007
+  weight_decay: 0.0005
+  scheduler: "cosine"
+  warmup_epochs: 1
 
 target:
-  focus_class: "bird"     # set to your worst class from baseline
+  focus_class: "bird"
   oversample: true
-  oversample_factor: 4.0  # try 6.0 if bird precision doesn’t improve enough
+  oversample_factor: 8.0    # ↑ class exposure w/out changing labels
 
 checkpoint:
-  init: "results/best.pt"        # warm start from baseline
+  init: "results/best.pt"         # warm start from baseline
   best_path: "results/best_finetune.pt"
 
 output:

@@ -1,94 +1,71 @@
-"""
-data.py — CIFAR-10 dataloaders with optional class-focused oversampling
-and mild class-conditional augmentations for the focus class.
-"""
-from typing import Tuple, List
 import torch
-from torch.utils.data import DataLoader, random_split, WeightedRandomSampler, Dataset
+from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms
+from torchvision.transforms import AutoAugment, AutoAugmentPolicy
 
-CIFAR10_CLASSES: List[str] = [
+# CIFAR-10 stats
+_MEAN = (0.4914, 0.4822, 0.4465)
+_STD  = (0.2470, 0.2435, 0.2616)
+CIFAR10_CLASSES = [
     "airplane","automobile","bird","cat","deer",
     "dog","frog","horse","ship","truck"
 ]
 
-def _normalize():
-    return transforms.Normalize((0.4914,0.4822,0.4465),(0.2023,0.1994,0.2010))
-
-class _FocusAugment(Dataset):
-    """
-    Wrap a dataset and, if label == focus_idx, apply extra mild augs to
-    help robustness on the targeted class.
-    """
-    def __init__(self, base: Dataset, focus_idx: int | None):
-        self.base = base
-        self.focus_idx = focus_idx
-        self.extra = transforms.Compose([
-            transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.02),
-            transforms.RandomGrayscale(p=0.1),
-            transforms.RandomErasing(p=0.15, scale=(0.02, 0.12), ratio=(0.3, 3.3))
-        ])
-
-    def __len__(self): return len(self.base)
-
-    def __getitem__(self, i):
-        img, y = self.base[i]
-        if self.focus_idx is not None and y == self.focus_idx:
-            img = self.extra(img)
-        return img, y
-
-def _transforms(train: bool):
-    if train:
+def _build_transforms(eval_mode: bool = False):
+    if eval_mode:
         return transforms.Compose([
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            _normalize(),
+            transforms.Normalize(_MEAN, _STD),
         ])
-    else:
-        return transforms.Compose([transforms.ToTensor(), _normalize()])
+    # stronger but classic CIFAR-10 stack
+    return transforms.Compose([
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        AutoAugment(AutoAugmentPolicy.CIFAR10),
+        transforms.ToTensor(),
+        transforms.Normalize(_MEAN, _STD),
+        transforms.RandomErasing(p=0.25, scale=(0.02, 0.2), ratio=(0.3, 3.3)),
+    ])
 
-def get_dataloaders(cfg, eval_mode: bool=False) -> Tuple[DataLoader, DataLoader, DataLoader, List[str]]:
+def _make_sampler_if_needed(train_set, class_names, cfg):
+    tgt_cfg = cfg.get("target", {})
+    if not tgt_cfg.get("oversample", False):
+        return None
+
+    focus_name = tgt_cfg.get("focus_class")
+    assert focus_name in class_names, f"Unknown class '{focus_name}'"
+    focus_idx = class_names.index(focus_name)
+
+    targets = torch.as_tensor(train_set.targets)
+    weights = torch.ones_like(targets, dtype=torch.float)
+    factor = float(tgt_cfg.get("oversample_factor", 4.0))
+    weights[targets == focus_idx] = factor
+
+    # sample with replacement so epochs stay the same length
+    return WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
+
+def get_dataloaders(cfg, eval_mode: bool = False):
     root = cfg["dataset"]["data_dir"]
-    num_workers = int(cfg["dataset"].get("num_workers", 2))
+    nw = int(cfg["dataset"].get("num_workers", 2))
     bs = int(cfg["train"]["batch_size"])
-    pin = torch.cuda.is_available()  # avoid CPU pin_memory warning
 
-    train_full = datasets.CIFAR10(root, train=True, download=True, transform=_transforms(train=True))
-    test_set   = datasets.CIFAR10(root, train=False, download=True, transform=_transforms(train=False))
+    t_train = _build_transforms(eval_mode=False)
+    t_eval  = _build_transforms(eval_mode=True)
 
-    val_size   = 5000
-    train_size = len(train_full) - val_size
-    gen = torch.Generator().manual_seed(cfg["seed"])
-    train_ds, val_ds = random_split(train_full, [train_size, val_size], generator=gen)
+    train_set = datasets.CIFAR10(root=root, train=True,  transform=t_train, download=True)
+    val_set   = datasets.CIFAR10(root=root, train=False, transform=t_eval,  download=True)
 
-    sampler = None
-    focus_idx = None
-    if (not eval_mode) and cfg["target"].get("oversample") and cfg["target"].get("focus_class") is not None:
-        fc = cfg["target"]["focus_class"]
-        focus_idx = CIFAR10_CLASSES.index(fc) if isinstance(fc, str) else int(fc)
-        factor = float(cfg["target"].get("oversample_factor", 3.0))
-        labels = torch.tensor([train_ds.dataset.targets[i] for i in train_ds.indices])
-        weights = torch.ones(len(labels))
-        weights[labels == focus_idx] = factor
-        sampler = WeightedRandomSampler(weights, num_samples=len(weights), replacement=True)
+    # class names straight from dataset
+    class_names = list(train_set.classes)
 
-    # Apply extra augs only on training subset
-    if focus_idx is not None and not eval_mode:
-        train_ds = _FocusAugment(train_ds, focus_idx)
-    else:
-        train_ds = _FocusAugment(train_ds, None)
+    sampler = None if eval_mode else _make_sampler_if_needed(train_set, class_names, cfg)
 
     train_loader = DataLoader(
-        train_ds, batch_size=bs, shuffle=(sampler is None), sampler=sampler,
-        num_workers=num_workers, pin_memory=pin
+        train_set, batch_size=bs, shuffle=(sampler is None),
+        sampler=sampler, num_workers=nw, pin_memory=True
     )
     val_loader = DataLoader(
-        val_ds, batch_size=bs, shuffle=False,
-        num_workers=num_workers, pin_memory=pin
+        val_set, batch_size=bs, shuffle=False,
+        num_workers=nw, pin_memory=True
     )
-    test_loader = DataLoader(
-        test_set, batch_size=bs, shuffle=False,
-        num_workers=num_workers, pin_memory=pin
-    )
-    return train_loader, val_loader, test_loader, CIFAR10_CLASSES
+    return train_loader, val_loader, None, class_names

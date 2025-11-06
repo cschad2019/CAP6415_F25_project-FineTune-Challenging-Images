@@ -1,121 +1,229 @@
-"""
-train.py — CIFAR-10 training with optional warm-start, early stopping, and loss/acc curves.
-"""
-import argparse, os, yaml
-import torch, torch.nn as nn
-from torch.optim import Adam
-from torch.optim.lr_scheduler import StepLR
-from tqdm import tqdm
-from utils import seed_everything, plot_curves, ensure_dir, save_json
-from data import get_dataloaders
-from model import build_model
+import argparse, os, math, random, yaml
+from pathlib import Path
 
-def batch_accuracy(logits: torch.Tensor, y: torch.Tensor) -> float:
-    return (logits.argmax(1) == y).float().mean().item()
+import numpy as np
+import torch
+from torch import nn
+from torch.optim import Adam, AdamW
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, SequentialLR
+from tqdm import tqdm
+
+from data import get_dataloaders
+from model import build_model  # your resnet18(<50 layers)
+# If your model file exposes get_model(), just change this import/name.
+
+# ---------------------------- utils ----------------------------
+
+def set_seed(seed: int = 42):
+    random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed) if torch.cuda.is_available() else None
+    torch.use_deterministic_algorithms(False)
+
+class LabelSmoothingCE(nn.Module):
+    def __init__(self, eps: float = 0.0):
+        super().__init__()
+        self.eps = eps
+        self.log_softmax = nn.LogSoftmax(dim=-1)
+
+    def forward(self, logits, target):
+        if self.eps <= 0.0:
+            return nn.functional.cross_entropy(logits, target)
+        log_probs = self.log_softmax(logits)
+        n = logits.size(-1)
+        with torch.no_grad():
+            true_dist = torch.zeros_like(log_probs)
+            true_dist.fill_(self.eps / (n - 1))
+            true_dist.scatter_(1, target.unsqueeze(1), 1 - self.eps)
+        return torch.mean(torch.sum(-true_dist * log_probs, dim=-1))
+
+def mixup_data(x, y, alpha=0.0):
+    if alpha <= 0.0:
+        return x, y, y, 1.0
+    lam = np.random.beta(alpha, alpha)
+    indices = torch.randperm(x.size(0), device=x.device)
+    mixed_x = lam * x + (1 - lam) * x[indices]
+    y_a, y_b = y, y[indices]
+    return mixed_x, y_a, y_b, float(lam)
+
+def mixup_criterion(criterion, pred, y_a, y_b, lam):
+    return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
+@torch.no_grad()
+def evaluate(model, loader, device):
+    model.eval()
+    total, correct, agg_loss = 0, 0, 0.0
+    crit = nn.CrossEntropyLoss()
+    for x, y in loader:
+        x, y = x.to(device), y.to(device)
+        logits = model(x)
+        agg_loss += crit(logits, y).item() * x.size(0)
+        pred = logits.argmax(1)
+        correct += (pred == y).sum().item()
+        total += x.size(0)
+    return correct / max(1, total), agg_loss / max(1, total)
+
+def plot_curves(history, out_path):
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(6,4))
+    xs = list(range(1, len(history["train_acc"]) + 1))
+    plt.plot(xs, history["train_acc"], label="train_acc")
+    plt.plot(xs, history["val_acc"],   label="val_acc")
+    plt.xlabel("epoch"); plt.ylabel("accuracy"); plt.title("Training vs Validation Accuracy")
+    plt.legend(); os.makedirs(Path(out_path).parent, exist_ok=True); plt.savefig(out_path, bbox_inches="tight"); plt.close()
+
+class EMA:
+    def __init__(self, model, decay=0.0):
+        self.decay = float(decay)
+        self.shadow = {}
+        if self.decay > 0:
+            for n, p in model.named_parameters():
+                if p.requires_grad: self.shadow[n] = p.detach().clone()
+
+    def update(self, model):
+        if self.decay <= 0: return
+        for n, p in model.named_parameters():
+            if not p.requires_grad: continue
+            self.shadow[n].mul_(self.decay).add_(p.detach(), alpha=1.0 - self.decay)
+
+    def store(self, model):
+        if self.decay <= 0: return {}
+        backup = {}
+        for n, p in model.named_parameters():
+            if p.requires_grad:
+                backup[n] = p.detach().clone()
+                p.data.copy_(self.shadow[n])
+        return backup
+
+    def restore(self, model, backup):
+        if self.decay <= 0: return
+        for n, p in model.named_parameters():
+            if p.requires_grad and n in backup:
+                p.data.copy_(backup[n])
+
+# ---------------------------- training ----------------------------
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--config", required=True)
-    ap.add_argument("--seed", type=int, default=42)
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", type=str, required=True)
+    parser.add_argument("--seed", type=int, default=42)
+    args = parser.parse_args()
 
-    with open(args.config, "r", encoding="utf-8") as f:
+    with open(args.config, "r") as f:
         cfg = yaml.safe_load(f)
-    cfg["seed"] = args.seed
-    seed_everything(args.seed)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    seed = int(cfg.get("seed", args.seed))
+    set_seed(seed)
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # data
     train_loader, val_loader, _, class_names = get_dataloaders(cfg, eval_mode=False)
 
-    model = build_model(
-        num_classes=len(class_names),
-        pretrained=False,
-        freeze_backbone=cfg["train"].get("freeze_backbone", False)
-    ).to(device)
+    # model
+    model = build_model(num_classes=len(class_names))
+    model.to(device)
 
-    # optional warm start
-    init_ckpt = cfg["checkpoint"].get("init")
-    if init_ckpt and os.path.exists(init_ckpt):
-        try:
-            model.load_state_dict(torch.load(init_ckpt, map_location=device), strict=False)
-            print(f"[info] warm-start from {init_ckpt}")
-        except Exception as e:
-            print(f"[warn] failed to load init checkpoint ({e}); training from scratch.")
+    # warm start if provided
+    init_ckpt = cfg.get("checkpoint", {}).get("init")
+    if init_ckpt and Path(init_ckpt).exists():
+        print(f"[info] warm-start from {init_ckpt}")
+        state = torch.load(init_ckpt, map_location=device)
+        if isinstance(state, dict) and "state_dict" in state:
+            state = state["state_dict"]
+        model.load_state_dict(state, strict=False)
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=float(cfg["train"].get("label_smoothing", 0.0)))
-    opt = Adam(model.parameters(), lr=cfg["optim"]["lr"], weight_decay=cfg["optim"]["weight_decay"])
-    scheduler = StepLR(opt, step_size=max(1, int(cfg["train"].get("lr_step", 0) or 0)), gamma=float(cfg["train"].get("lr_gamma", 0.1))) \
-                if cfg["train"].get("lr_step") else None
+    # loss + opt + sched
+    ls = float(cfg["train"].get("label_smoothing", 0.0))
+    criterion = LabelSmoothingCE(eps=ls)
 
-    history = {"train_acc": [], "val_acc": [], "train_loss": [], "val_loss": []}
-    best_val, epochs = 0.0, int(cfg["train"]["epochs"])
-    patience = cfg["train"].get("early_stopping_patience", None)
-    bad_epochs = 0
+    name = cfg["optim"].get("name", "adamw").lower()
+    lr   = float(cfg["optim"].get("lr", 7e-4))
+    wd   = float(cfg["optim"].get("weight_decay", 5e-4))
+    if name == "adamw":
+        optimizer = AdamW(model.parameters(), lr=lr, weight_decay=wd)
+    else:
+        optimizer = Adam(model.parameters(), lr=lr, weight_decay=wd)
 
-    try:
-        for epoch in range(1, epochs + 1):
-            # Train
-            model.train()
-            tr_acc = tr_loss = 0.0
-            for x, y in tqdm(train_loader, desc=f"Epoch {epoch}/{epochs} [train]"):
-                x, y = x.to(device), y.to(device)
-                opt.zero_grad()
-                logits = model(x)
-                loss = criterion(logits, y)
-                loss.backward(); opt.step()
-                tr_loss += loss.item()
-                tr_acc  += batch_accuracy(logits, y)
-            train_loss = tr_loss / len(train_loader)
-            train_acc  = tr_acc  / len(train_loader)
+    epochs = int(cfg["train"]["epochs"])
+    warmup_epochs = int(cfg["optim"].get("warmup_epochs", 0))
+    sched_name = cfg["optim"].get("scheduler", "cosine")
 
-            # Val
-            model.eval()
-            va_acc = va_loss = 0.0
-            with torch.no_grad():
-                for x, y in tqdm(val_loader, desc=f"Epoch {epoch}/{epochs} [val]"):
-                    x, y = x.to(device), y.to(device)
-                    logits = model(x)
-                    loss = criterion(logits, y)
-                    va_loss += loss.item()
-                    va_acc  += batch_accuracy(logits, y)
-            val_loss = va_loss / len(val_loader)
-            val_acc  = va_acc  / len(val_loader)
+    if sched_name == "cosine":
+        # warmup (per-epoch) + cosine (per-epoch)
+        main_sched = CosineAnnealingLR(optimizer, T_max=max(1, epochs - warmup_epochs))
+        if warmup_epochs > 0:
+            warmup = LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs)
+            scheduler = SequentialLR(optimizer, schedulers=[warmup, main_sched], milestones=[warmup_epochs])
+        else:
+            scheduler = main_sched
+    else:
+        scheduler = None
 
-            if scheduler: scheduler.step()
+    # options
+    mixup_alpha = float(cfg["train"].get("mixup_alpha", 0.0))
+    grad_clip   = float(cfg["train"].get("grad_clip_norm", 0.0))
+    ema_decay   = float(cfg["train"].get("ema_decay", 0.0))
+    ema = EMA(model, decay=ema_decay)
 
-            history["train_acc"].append(train_acc); history["val_acc"].append(val_acc)
-            history["train_loss"].append(train_loss); history["val_loss"].append(val_loss)
-            print(f"Epoch {epoch}: train_acc={train_acc:.4f}  val_acc={val_acc:.4f}  "
-                  f"| train_loss={train_loss:.4f}  val_loss={val_loss:.4f}")
+    best_path = cfg["checkpoint"]["best_path"]
+    os.makedirs(Path(best_path).parent, exist_ok=True)
 
-            # Save best
-            if val_acc > best_val:
-                best_val = val_acc
-                best_path = cfg["checkpoint"]["best_path"]
-                ensure_dir(best_path); torch.save(model.state_dict(), best_path)
-                bad_epochs = 0
+    history = {"train_acc": [], "val_acc": []}
+    best_val = -1.0
+
+    for epoch in range(1, epochs + 1):
+        model.train()
+        total, correct, running_loss = 0, 0, 0.0
+
+        pbar = tqdm(train_loader, desc=f"Epoch {epoch}/{epochs} [train]")
+        for x, y in pbar:
+            x, y = x.to(device), y.to(device)
+
+            xm, y_a, y_b, lam = mixup_data(x, y, mixup_alpha)
+
+            logits = model(xm)
+            loss = mixup_criterion(criterion, logits, y_a, y_b, lam) if mixup_alpha > 0 else criterion(logits, y)
+            optimizer.zero_grad()
+            loss.backward()
+            if grad_clip and grad_clip > 0:
+                nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
+            optimizer.step()
+            ema.update(model)
+
+            running_loss += loss.item() * x.size(0)
+            pred = logits.argmax(1)
+            if mixup_alpha > 0:
+                correct += (lam * (pred == y_a).sum().item() + (1 - lam) * (pred == y_b).sum().item())
             else:
-                bad_epochs += 1
-                if patience is not None and bad_epochs >= int(patience):
-                    print(f"[early-stop] no val improvement for {patience} epoch(s).")
-                    break
+                correct += (pred == y).sum().item()
+            total += x.size(0)
 
-        # Curves + train summary
-        plot_curves(history, cfg["output"]["curves"])
-        save_json(
-            {"project": cfg.get("project_name","run"),
-             "best_val_acc": best_val,
-             "epochs_ran": len(history["val_acc"]),
-             "seed": cfg["seed"]},
-            os.path.join("results", f"{cfg.get('project_name','run')}_train_metrics.json")
-        )
-        print(f"Best val acc: {best_val:.4f} | saved → {cfg['checkpoint']['best_path']}")
+            pbar.set_postfix(loss=f"{running_loss/max(1,total):.4f}")
 
-    except KeyboardInterrupt:
-        print("\n[info] interrupted; saving partial progress.")
-        best_path = cfg["checkpoint"]["best_path"]
-        ensure_dir(best_path); torch.save(model.state_dict(), best_path)
-        plot_curves(history, cfg["output"]["curves"])
+        train_acc = correct / max(1, total)
+
+        # validate (use EMA weights if enabled)
+        backup = ema.store(model) if ema_decay > 0 else {}
+        val_acc, _ = evaluate(model, val_loader, device)
+        if ema_decay > 0:
+            ema.restore(model, backup)
+
+        history["train_acc"].append(train_acc)
+        history["val_acc"].append(val_acc)
+
+        if scheduler is not None:
+            scheduler.step()
+
+        print(f"Epoch {epoch}: train_acc={train_acc:.4f}  val_acc={val_acc:.4f}  | "
+              f"train_loss={running_loss/max(1,total):.4f}")
+
+        if val_acc > best_val:
+            best_val = val_acc
+            torch.save(model.state_dict(), best_path)
+            print(f"Best val acc: {best_val:.4f} | saved → {best_path}")
+
+    # save curves
+    plot_curves(history, cfg["output"]["curves"])
 
 if __name__ == "__main__":
     main()
