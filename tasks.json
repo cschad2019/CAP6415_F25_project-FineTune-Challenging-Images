@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Baseline: train+eval",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile","-ExecutionPolicy","Bypass",
+        "-Command",
+        ". .\\.venv\\Scripts\\Activate.ps1; python src\\train.py --config configs\\baseline.yaml --seed 42; python src\\eval.py --config configs\\baseline.yaml --seed 42"
+      ],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Finetune: train+eval",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile","-ExecutionPolicy","Bypass",
+        "-Command",
+        ". .\\.venv\\Scripts\\Activate.ps1; python src\\train.py --config configs\\finetune_target_class.yaml --seed 42; python src\\eval.py --config configs\\finetune_target_class.yaml --seed 42"
+      ],
+      "group": "build",
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}
