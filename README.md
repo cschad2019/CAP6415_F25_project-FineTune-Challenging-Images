@@ -8,7 +8,7 @@
 ---
 
 ## Abstract
-We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a baseline, identify the lowest-precision (most challenging) class from the confusion matrix, and fine-tune the model using class-focused sampling and mild augmentations. We report before/after precision for the target class, overall accuracy, learning curves, and qualitative samples. The code is fully reproducible on CPU via `requirements.txt` and fixed seeds.
+We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a **baseline**, identify the **lowest-precision (most challenging) class** from the confusion matrix, and then **fine-tune** using class-focused sampling and mild augmentations. We report before/after precision for the target class, overall accuracy, learning curves, and qualitative samples. The code is fully reproducible on **CPU** via `requirements.txt` and fixed seeds.
 
 ---
 
@@ -22,9 +22,9 @@ We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a baseline, 
 **Targeted improvement (cat):** 0.536 → **0.804** (**+0.268**).  
 After improving **cat**, the error profile shifted and **bird** became the new weakest class (0.571), which is expected when you focus capacity on a prior failure mode.
 
-**Artifacts**
-- Baseline: `results/best.pt`, `results/baseline_confusion_matrix.png`, `results/samples_baseline/…`
-- Fine-tune: `results/best_finetune.pt`, `results/finetune_confusion_matrix.png`, `results/samples_finetune/…`
+**Artifacts (exact file names):**
+- **Baseline:** `results/best.pt`, `results/baseline_confusion_matrix.png`, `results/samples_baseline/{correct_grid.png, wrong_grid.png}`
+- **Fine-tune:** `results/best_finetune.pt`, `results/finetune_confusion_matrix.png`, `results/samples_finetune/{correct_grid.png, wrong_grid.png}`
 
 ![Baseline Confusion Matrix](results/baseline_confusion_matrix.png)
 ![Finetune Confusion Matrix](results/finetune_confusion_matrix.png)
@@ -46,12 +46,12 @@ python -m venv .venv
 # Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 # .\.venv\Scripts\Activate.ps1
 
-# 2) Install dependencies
+# 2) Install dependencies (CPU-only)
 pip install -r requirements.txt
 One-click run in VS Code
 Open Run and Debug (Ctrl/Cmd+Shift+D).
 
-Select one of the provided configurations:
+Choose a configuration:
 
 Baseline ▶ Train → Eval
 
@@ -59,10 +59,13 @@ Finetune ▶ Train → Eval
 
 Press ▶ Run (Without Debugging).
 
-All outputs appear under results/.
+Outputs are written to results/.
 
-Alternatively: Terminal → Run Task… and choose
-“Baseline: Train+Eval” or “Finetune: Train+Eval”.
+Alternative: Terminal → Run Task… and select:
+
+Baseline: Train+Eval
+
+Finetune: Train+Eval
 
 Command-line alternative
 powershell
@@ -73,7 +76,7 @@ python scripts/run_pipeline.py --mode baseline --seed 42
 # Fine-tune (focuses the worst class from the baseline; see config)
 python scripts/run_pipeline.py --mode finetune --seed 42
 Expected outputs
-After baseline:
+After baseline
 
 results/best.pt
 
@@ -81,9 +84,9 @@ results/baseline_confusion_matrix.png
 
 results/samples_baseline/{correct_grid.png, wrong_grid.png}
 
-Example metrics (my run): acc ≈ 0.761, worst class cat (0.536)
+Example metrics (this run): acc ≈ 0.761, worst class cat (0.536)
 
-After fine-tune:
+After fine-tune
 
 results/best_finetune.pt
 
@@ -91,21 +94,21 @@ results/finetune_confusion_matrix.png
 
 results/samples_finetune/{correct_grid.png, wrong_grid.png}
 
-Example metrics (my run): acc ≈ 0.841, cat ≈ 0.804 (new worst: bird 0.571)
+Example metrics (this run): acc ≈ 0.841, cat ≈ 0.804 (new worst: bird 0.571)
 
 Note: On CPU you may see a benign pin_memory warning; it’s safe to ignore.
 
 How It Works
 Baseline. Train ResNet-18 on CIFAR-10 with standard augments; evaluate to get per-class precision and a confusion matrix.
 
-Find the hardest class. Parse per-class precision; the lowest precision class becomes the focus_class for fine-tune.
+Find the hardest class. Parse per-class precision; the lowest-precision class becomes the focus_class for fine-tuning.
 
 Fine-tune. Warm-start from the baseline checkpoint, freeze the backbone, oversample the focus class, apply mild targeted augmentations, and train a few more epochs; then re-evaluate and compare.
 
 Configs
 configs/baseline.yaml — neutral training (no class focus).
 
-configs/finetune_target_class.yaml — finetune recipe:
+configs/finetune_target_class.yaml — fine-tune recipe:
 
 target.focus_class: "<classname>" ← set to your worst class from baseline
 
@@ -154,21 +157,21 @@ Deterministic seed everywhere: --seed 42.
 
 CPU-only; dataset auto-downloads to ./data.
 
-Re-running will overwrite results/best.pt / best_finetune.pt and plots.
+Re-running will overwrite results/best.pt, results/best_finetune.pt, and plots.
 If you want to preserve a specific run, copy files to results/finals/ first.
 
 Troubleshooting
 Venv activation blocked (PowerShell):
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
-CPU-only install:
+CPU-only install (if Torch install fails):
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 VS Code can’t find Python:
-Use Python: Select Interpreter and pick the .venv interpreter.
+Use Python: Select Interpreter and pick the repo’s .venv interpreter.
 
 Attribution
-PyTorch and torchvision for model and dataloaders.
+PyTorch and torchvision for model/dataloaders.
 
 CIFAR-10 dataset for training/evaluation.
 
