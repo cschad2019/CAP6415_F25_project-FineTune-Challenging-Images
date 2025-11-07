@@ -1,0 +1,32 @@
+Week 4 — Planned (Preliminary results milestone)
+
+Goals:
+- Lock in a stronger fine-tune pass using best week-3 settings.
+- Produce “prelim” artifacts for grading.
+
+Planned tasks:
+1) Training
+   - Warm start from baseline `results/best.pt`.
+   - Freeze backbone; unfreeze last block if needed (light fine-tune).
+   - 8–12 epochs, cosine LR, early stop on val acc (patience 3).
+   - Keep oversample_factor chosen in week-3.
+
+2) Artifacts
+   - Save `results/best_finetune.pt`.
+   - Export `results/finetune_confusion_matrix.png` and `results/samples_finetune/*`.
+   - Generate side-by-side snippet of per-class precision (baseline vs finetune).
+
+3) Repro & UX
+   - Confirm one-click VS Code tasks work on a clean venv.
+   - Finish `HOW_TO_RUN.md` (1-pager for TA).
+
+4) README
+   - Replace placeholders with the new accuracies.
+   - Brief interpretation (why bird improves; any new weakest class).
+
+To verify:
+- Bird precision increases vs week-3.
+- Overall accuracy ≥ week-3 best.
+- All scripts runnable via `scripts/run_pipeline.py` and VS Code tasks.
+
+(Outcomes to be appended after runs finish.)

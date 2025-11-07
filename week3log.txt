@@ -1,0 +1,26 @@
+Week 3 — Planned (not yet executed)
+
+Goals:
+- Target current weakest class ("bird") from baseline analysis.
+- Run short ablations to choose fine-tune settings that help bird without hurting overall acc.
+
+Planned tasks:
+1) Data/Training
+   - Oversample bird (oversample_factor ∈ {4,6,8}) and compare.
+   - Try mild class-targeted augs for bird (random erase p∈{0.1,0.2}, color jitter low).
+   - Label smoothing sweep (ε ∈ {0.0, 0.05, 0.1}).
+   - LR schedule quick check (step vs cosine), 5–8 epochs.
+
+2) Code/Configs
+   - Add config flags for the above; keep seeds fixed (42).
+   - Save runs to `results/ablations_week3/` (cm + samples).
+
+3) Reporting
+   - Update README results table with best week-3 numbers (cat vs bird precision).
+   - Note tradeoffs (per-class gains vs overall acc).
+
+To verify:
+- Confusion mat improves bird precision vs week-2.
+- No regression >1–2% on overall accuracy.
+
+(Will fill actual outcomes after experiments complete.)
