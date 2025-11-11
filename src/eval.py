@@ -1,3 +1,34 @@
+"""
+CAP6415 F25 — Project #8
+Evaluation script: loads a checkpoint and reports metrics/figures.
+
+Purpose:
+    Loads a trained model checkpoint, computes overall accuracy and per-class
+    precision on CIFAR-10, prints a compact table, highlights the worst class,
+    and writes visualization artifacts (confusion matrix + sample grids).
+
+Key CLI args:
+    --config (str): Path to YAML (must match how the model was trained).
+    --seed (int): Random seed (keeps transforms/splits deterministic).
+
+What this writes (to ./results):
+    - Confusion matrix PNG:
+        * Baseline run:   results/baseline_confusion_matrix.png
+        * Fine-tune run:  results/finetune_confusion_matrix.png
+    - Sample grids:
+        * results/samples_baseline/ or results/samples_finetune/
+    - Uses checkpoint file:
+        * Baseline:       results/best.pt
+        * Fine-tune:      results/best_finetune.pt
+
+Raises:
+    FileNotFoundError: If the expected checkpoint file does not exist.
+
+Example:
+    python src/eval.py --config configs/baseline.yaml --seed 42
+    python src/eval.py --config configs/finetune_target_class.yaml --seed 42
+"""
+
 # src/eval.py
 # Evaluate a trained checkpoint on CIFAR-10 and save:
 #  - per-class precision table (printed)

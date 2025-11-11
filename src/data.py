@@ -1,3 +1,33 @@
+"""
+CAP6415 F25 — Project #8
+Data utilities: CIFAR-10 datasets, transforms, and DataLoaders.
+
+Purpose:
+    Builds train/val (and optional test) DataLoaders for CIFAR-10 with standard
+    augmentations. When fine-tuning, can oversample a specified focus class to
+    emphasize harder categories.
+
+Primary API:
+    get_dataloaders(cfg: dict, eval_mode: bool = False)
+        Builds DataLoaders according to the YAML config.
+
+Key config keys:
+    dataset.data_dir (str): Cache/download location for CIFAR-10.
+    train.batch_size (int), train.num_workers (int), train.pin_memory (bool)
+    target.focus_class (str|None): Class name to oversample (e.g., "cat").
+    target.oversample (bool), target.oversample_factor (int): Rebalancing strength.
+
+Returns:
+    tuple:
+        train_loader (DataLoader or None): None when eval_mode=True.
+        val_loader   (DataLoader): Validation split.
+        test_loader  (DataLoader or None): If implemented; else None.
+        class_names  (List[str]): CIFAR-10 class names in loader order.
+
+Example:
+    train_loader, val_loader, _, class_names = get_dataloaders(cfg, eval_mode=False)
+"""
+
 import torch
 from torch.utils.data import DataLoader, WeightedRandomSampler
 from torchvision import datasets, transforms

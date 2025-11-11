@@ -1,3 +1,35 @@
+"""
+CAP6415 F25 — Project #8
+Training entry point for CIFAR-10 with a small model (ResNet-18).
+
+Purpose:
+    Runs either a neutral *baseline* train or a *targeted fine-tune* (when the
+    config enables a focus class / oversampling / partial freezing). Tracks
+    accuracy/loss per epoch and saves the best checkpoint by validation accuracy.
+
+Key CLI args:
+    --config (str): Path to a YAML config (e.g., configs/baseline.yaml or
+        configs/finetune_target_class.yaml).
+    --seed (int): Random seed for reproducibility (e.g., 42).
+
+Important config keys (see YAML):
+    dataset.data_dir (str): Root folder where CIFAR-10 will be cached/downloaded.
+    train.batch_size (int), train.epochs (int), train.lr (float)
+    train.num_workers (int), train.pin_memory (bool)
+    train.freeze_backbone (bool): If True, fine-tune only the classifier head.
+    target.focus_class (str|None): Class name to bias training toward.
+    target.oversample (bool), target.oversample_factor (int): Class rebalancing.
+
+Outputs (written to ./results):
+    - Baseline best model:        results/best.pt
+    - Fine-tuned best model:      results/best_finetune.pt
+    - (Optional) training curves/plots if enabled in utils.
+
+Example:
+    python src/train.py --config configs/baseline.yaml --seed 42
+    python src/train.py --config configs/finetune_target_class.yaml --seed 42
+"""
+
 import argparse, os, math, random, yaml
 from pathlib import Path
 
