@@ -17,7 +17,15 @@ We train a small CNN (< 50 layers; ResNet-18) on CIFAR-10 to obtain a **baseline
 | Run        | Overall Acc | Worst Class | Precision (worst) |
 |------------|-------------|-------------|-------------------|
 | Baseline   | **0.761**   | **cat**     | **0.536**         |
-| Fine-tuned | **0.841**   | **bird**    | **0.571**         |
+| Fine-tuned | **0.841**   | **bird**    | **0.571**   
+      
+**Baseline**
+![Baseline Confusion Matrix](results/baseline_confusion_matrix.png)
+
+**Fine-tune**
+![Finetune Confusion Matrix](results/finetune_confusion_matrix.png)
+
+
 
 **Targeted improvement (cat):** 0.536 → **0.804** (**+0.268**).  
 After improving **cat**, the error profile shifted and **bird** became the new weakest class (0.571), which is expected when you focus capacity on a prior failure mode.
@@ -167,8 +175,10 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 CPU-only install (if Torch install fails):
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-VS Code can’t find Python:
-Use Python: Select Interpreter and pick the repo’s .venv interpreter.
+VS Code cant find Python:
+Use Python: Select Interpreter and pick the repos .venv interpreter.
+
+Demo video: is placed in demo folder in reposistory I will also attach the video in the submisson.
 
 Attribution
 PyTorch and torchvision for model/dataloaders.

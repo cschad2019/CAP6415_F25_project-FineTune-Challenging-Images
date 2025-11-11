@@ -1,26 +1,33 @@
-Week 3 — Planned (not yet executed)
+Week 3 (ending Nov 23, 2025) — Log
+Author: Cale Schad (z23503021)
 
-Goals:
-- Target current weakest class ("bird") from baseline analysis.
-- Run short ablations to choose fine-tune settings that help bird without hurting overall acc.
+What I planned:
+- Add a one-click run path in VS Code for both baseline and fine-tune.
+- Provide a single entry script to run baseline/finetune end-to-end.
+- Run targeted fine-tuning and document before/after results.
+- Update README with results, plots, and step-by-step run instructions.
 
-Planned tasks:
-1) Data/Training
-   - Oversample bird (oversample_factor ∈ {4,6,8}) and compare.
-   - Try mild class-targeted augs for bird (random erase p∈{0.1,0.2}, color jitter low).
-   - Label smoothing sweep (ε ∈ {0.0, 0.05, 0.1}).
-   - LR schedule quick check (step vs cosine), 5–8 epochs.
+What I did:
+- Added one-click run via VS Code:
+  - .vscode/tasks.json → “Baseline: Train+Eval”, “Finetune: Train+Eval”
+  - .vscode/launch.json → run without debugging using debugpy
+- Created pipeline script:
+  - scripts/run_pipeline.py supports: --mode baseline | finetune, --seed 42
+- Fine-tuned the model from the baseline checkpoint:
+  - Focused prior weak class, oversampling + mild augmentations, froze backbone
+  - Results (CPU):
+    - Baseline: overall acc ≈ 0.761; worst class = cat (precision ≈ 0.536)
+    - Finetuned: overall acc ≈ 0.841; cat ≈ 0.804; new worst = bird (≈ 0.571)
+- Produced & saved artifacts:
+  - results/baseline_confusion_matrix.png
+  - results/finetune_confusion_matrix.png
+  - results/samples_baseline/{correct_grid.png, wrong_grid.png}
+  - results/samples_finetune/{correct_grid.png, wrong_grid.png}
+  - results/best.pt, results/best_finetune.pt
+- Updated README:
+  - Abstract, results table, images, Quick Start (CPU), one-click run, reproducibility notes
 
-2) Code/Configs
-   - Add config flags for the above; keep seeds fixed (42).
-   - Save runs to `results/ablations_week3/` (cm + samples).
-
-3) Reporting
-   - Update README results table with best week-3 numbers (cat vs bird precision).
-   - Note tradeoffs (per-class gains vs overall acc).
-
-To verify:
-- Confusion mat improves bird precision vs week-2.
-- No regression >1–2% on overall accuracy.
-
-(Will fill actual outcomes after experiments complete.)
+What’s next (Week 4 preview):
+- Small ablations (lr, oversample factor, unfreezing last block) to see if bird improves
+- Refresh plots under results/ and finalize screenshots
+- Start drafting demo outline and timing
