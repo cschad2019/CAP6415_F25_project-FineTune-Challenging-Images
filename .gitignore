@@ -1,18 +1,60 @@
-# ─── Python / Env / IDE ─────────────────────────────────────────────────────────
+# -------------------------
+# Python bytecode / builds
+# -------------------------
 __pycache__/
-*.pyc
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# -------------------------
+# Virtual environments
+# -------------------------
 .venv/
-.env
+venv/
+env/
+
+# -------------------------
+# Notebook + test caches
+# -------------------------
 .ipynb_checkpoints/
-.vscode/
+.pytest_cache/
 
-# ─── Data / Artifacts ───────────────────────────────────────────────────────────
-data/
-checkpoints/
-outputs/
+# -------------------------
+# OS junk
+# -------------------------
+.DS_Store
+Thumbs.db
 
-# ─── Model / Media (use Git LFS if you need them in git) ───────────────────────
-*.pt
-*.pth
-*.ckpt
-*.mp4
+# -------------------------
+# VS Code (keep run configs)
+# -------------------------
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# -------------------------
+# Data (auto-downloaded)
+# Keep a placeholder if you want the folder tracked
+# -------------------------
+data/*
+!data/.gitkeep
+
+# -------------------------
+# Results
+# Ignore heavy checkpoints; keep figures and sample grids
+# -------------------------
+results/*.pt
+results/*.ckpt
+!results/*.png
+!results/samples_baseline/**
+!results/samples_finetune/**
+
+# -------------------------
+# Logs (optional)
+# -------------------------
+*.log

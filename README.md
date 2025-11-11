@@ -130,29 +130,24 @@ train.freeze_backbone: true, train.epochs: 5–8
 slightly reduced LR for stability
 
 Repository Structure
-php
-Copy code
+
 CAP6415_F25_project-FineTune-Challenging-Images/
 ├─ README.md
 ├─ HOW_TO_RUN.md
 ├─ requirements.txt
 ├─ env.yml
-├─ week1log.txt
-├─ week2log.txt
-├─ week3log.txt
-├─ week4log.txt
-├─ week5log.txt
+├─ week1log.txt … week5log.txt
 ├─ configs/
 │  ├─ baseline.yaml
 │  └─ finetune_target_class.yaml
 ├─ src/
-│  ├─ data.py         # CIFAR-10 loaders, (optional) class oversampling
-│  ├─ model.py        # ResNet-18 (< 50 layers)
-│  ├─ train.py        # training loop + checkpointing
-│  ├─ eval.py         # metrics, confusion matrix, sample grids
-│  └─ utils.py        # seeding, plotting, helpers
+│  ├─ data.py     # CIFAR-10 loaders, oversampling
+│  ├─ model.py    # ResNet-18
+│  ├─ train.py    # training + checkpointing
+│  ├─ eval.py     # metrics + plots
+│  └─ utils.py
 ├─ scripts/
-│  └─ run_pipeline.py # baseline/finetune end-to-end entry point
+│  └─ run_pipeline.py  # one-command baseline/finetune
 ├─ results/
 │  ├─ best.pt
 │  ├─ best_finetune.pt
@@ -161,8 +156,10 @@ CAP6415_F25_project-FineTune-Challenging-Images/
 │  ├─ samples_baseline/
 │  └─ samples_finetune/
 └─ .vscode/
-   ├─ tasks.json      # one-click tasks
-   └─ launch.json     # Run/Debug configurations (debugpy)
+   ├─ tasks.json       # one-click tasks
+   └─ launch.json      # Run/Debug configs (debugpy)
+
+
 Reproducibility Notes
 Deterministic seed everywhere: --seed 42.
 
