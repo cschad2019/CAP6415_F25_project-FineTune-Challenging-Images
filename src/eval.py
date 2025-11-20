@@ -183,7 +183,7 @@ def save_sample_grids(images: torch.Tensor,
 @torch.no_grad()
 def evaluate(model: torch.nn.Module,
              loader: DataLoader,
-             device: torch.device) -> Tuple[float, np.ndarray, np.ndarray, torch.Tensor]:
+             device: torch.device) -> Tuple[float, np.ndarray, np.ndarray, torch.Tensor, np.ndarray]:
     model.eval().to(device)
 
     all_preds: List[int] = []

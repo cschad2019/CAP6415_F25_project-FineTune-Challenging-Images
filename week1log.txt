@@ -1,32 +1,28 @@
-[Week 1: Nov 3–9, 2025]
-Project: CAP6415_F25_project-FineTune-Challenging-Images
-Student: Cale Schad (z23503021)
-Repo: https://github.com/cschad2019/CAP6415_F25_project-FineTune-Challenging-Images
+[Week 1: Nov 3-9, 2025]  
+Project: CAP6415_F25_project-FineTune-Challenging-Images  
+Student: Cale Schad (z23503021)  
+Repo: https://github.com/cschad2019/CAP6415_F25_project-FineTune-Challenging-Images  
 
-What I did
-- Connected VS Code to GitHub.
-- Created public repository and pushed the initial commit.
-- Set global Git identity (name/email) using FAU address.
-- Organized project structure:
-  /src (train.py, eval.py, data.py, model.py, utils.py)
-  /configs (baseline.yaml, finetune_target_class.yaml)
-  /results (curves.png, confusion_matrix.png, best.pt, /samples)
-  /demo (video placeholder)
-  README.md, requirements.txt, env.yml, .gitignore
-- Added week1–week5 log files at repo root for the development diary.
-- Wrote initial README skeleton (abstract + run instructions placeholder).
-- Added .gitignore to keep caches/venv/checkpoints out of version control.
+What I did  
+- Created the public repo and pushed the initial scaffold.  
+- Set Git identity with FAU email; connected VS Code to the repo.  
+- Laid out project structure:  
+  /src (train.py, eval.py, data.py, model.py, utils.py)  
+  /configs (baseline.yaml, finetune_target_class.yaml placeholders)  
+  /results (placeholders)  
+  README.md, requirements.txt, env.yml, .gitignore  
+- Added week1-week5 log files and a draft README skeleton (abstract + planned run instructions).  
+- Added .gitignore to exclude venv/caches/checkpoints.  
 
-Artifacts committed this week
-- Folder scaffold + placeholder files
-- README.md (draft)
-- .gitignore, requirements.txt, env.yml
-- week1log.txt … week5log.txt
+Artifacts committed this week  
+- Repo scaffold and placeholders.  
+- README.md (draft), requirements.txt, env.yml, .gitignore.  
+- week1log.txt through week5log.txt (templates).  
 
-Notes / Issues
-- None blocking. Next step is coding a runnable baseline and verifying environment setup.
+Notes / Issues  
+- None blocking; next step is to make the baseline runnable.  
 
-Plan for Week 2
-- Implement baseline training/evaluation on CIFAR-10 (ResNet-18).
-- Generate initial confusion matrix and identify lowest-precision class.
-- Update README with exact commands and results.
+Plan for Week 2  
+- Finish wiring the training/eval scripts for CIFAR-10.  
+- Verify environment setup on local machine (venv + deps install).  
+- Prepare configs for baseline and targeted fine-tune.  

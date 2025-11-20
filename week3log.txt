@@ -1,33 +1,31 @@
-Week 3 (ending Nov 23, 2025) — Log
-Author: Cale Schad (z23503021)
+Week 3 (ending Nov 23, 2025) - Log  
+Author: Cale Schad (z23503021)  
 
-What I planned:
-- Add a one-click run path in VS Code for both baseline and fine-tune.
-- Provide a single entry script to run baseline/finetune end-to-end.
-- Run targeted fine-tuning and document before/after results.
-- Update README with results, plots, and step-by-step run instructions.
+What I planned:  
+- Run the full baseline on CIFAR-10 and capture metrics/artifacts.  
+- Fix any training/eval rough edges before fine-tuning.  
+- Start documentation updates with real numbers.  
 
-What I did:
-- Added one-click run via VS Code:
-  - .vscode/tasks.json → “Baseline: Train+Eval”, “Finetune: Train+Eval”
-  - .vscode/launch.json → run without debugging using debugpy
-- Created pipeline script:
-  - scripts/run_pipeline.py supports: --mode baseline | finetune, --seed 42
-- Fine-tuned the model from the baseline checkpoint:
-  - Focused prior weak class, oversampling + mild augmentations, froze backbone
-  - Results (CPU):
-    - Baseline: overall acc ≈ 0.761; worst class = cat (precision ≈ 0.536)
-    - Finetuned: overall acc ≈ 0.841; cat ≈ 0.804; new worst = bird (≈ 0.571)
-- Produced & saved artifacts:
-  - results/baseline_confusion_matrix.png
-  - results/finetune_confusion_matrix.png
-  - results/samples_baseline/{correct_grid.png, wrong_grid.png}
-  - results/samples_finetune/{correct_grid.png, wrong_grid.png}
-  - results/best.pt, results/best_finetune.pt
-- Updated README:
-  - Abstract, results table, images, Quick Start (CPU), one-click run, reproducibility notes
+What I did (Nov 19 run):  
+- Ran baseline training on CPU (3 epochs, batch 128):  
+  - Train_acc/val_acc per epoch: 0.3902/0.5242, 0.5728/0.6463, 0.6668/0.7610.  
+  - Saved best checkpoint -> results/best.pt.  
+  - Curve plot -> results/baseline_curves.png.  
+- Ran evaluation for baseline:  
+  - Overall accuracy: 0.761.  
+  - Worst class: cat (precision 0.536).  
+  - Per-class precision: airplane 0.800, automobile 0.928, bird 0.614, cat 0.536, deer 0.797, dog 0.669, frog 0.722, horse 0.890, ship 0.876, truck 0.904.  
+  - Artifacts: results/baseline_confusion_matrix.png, results/samples_baseline/{correct_grid.png, wrong_grid.png}.  
+- Code/documentation polish:  
+  - Ensured EMA save uses evaluated weights; set deterministic flag.  
+  - Fixed eval_mode loader to avoid training transforms when eval_only.  
+  - Updated README and How to run with the baseline numbers and reproducibility notes.  
 
-What’s next (Week 4 preview):
-- Small ablations (lr, oversample factor, unfreezing last block) to see if bird improves
-- Refresh plots under results/ and finalize screenshots
-- Start drafting demo outline and timing
+Notes / Issues:  
+- Pin_memory warning appears on CPU-only; harmless.  
+- Fine-tune run is pending (will target the weakest class once baseline is finalized).  
+
+Plan for Week 4 preview:  
+- Run the targeted fine-tune (focus_class per config), then eval to get updated metrics/artifacts.  
+- Refresh README results section with fine-tune outcomes.  
+- Prepare demo outline.  

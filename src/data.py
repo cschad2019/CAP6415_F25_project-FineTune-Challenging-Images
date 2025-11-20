@@ -82,18 +82,25 @@ def get_dataloaders(cfg, eval_mode: bool = False):
     t_train = _build_transforms(eval_mode=False)
     t_eval  = _build_transforms(eval_mode=True)
 
-    train_set = datasets.CIFAR10(root=root, train=True,  transform=t_train, download=True)
-    val_set   = datasets.CIFAR10(root=root, train=False, transform=t_eval,  download=True)
+    train_set = None
+    sampler = None
+    if not eval_mode:
+        train_set = datasets.CIFAR10(root=root, train=True, transform=t_train, download=True)
+        class_names = list(train_set.classes)
+        sampler = _make_sampler_if_needed(train_set, class_names, cfg)
+    else:
+        class_names = list(CIFAR10_CLASSES)
 
-    # class names straight from dataset
-    class_names = list(train_set.classes)
+    val_set = datasets.CIFAR10(root=root, train=False, transform=t_eval, download=True)
+    # keep class_names consistent with loader order
+    class_names = list(val_set.classes)
 
-    sampler = None if eval_mode else _make_sampler_if_needed(train_set, class_names, cfg)
-
-    train_loader = DataLoader(
-        train_set, batch_size=bs, shuffle=(sampler is None),
-        sampler=sampler, num_workers=nw, pin_memory=True
-    )
+    train_loader = None
+    if train_set is not None:
+        train_loader = DataLoader(
+            train_set, batch_size=bs, shuffle=(sampler is None),
+            sampler=sampler, num_workers=nw, pin_memory=True
+        )
     val_loader = DataLoader(
         val_set, batch_size=bs, shuffle=False,
         num_workers=nw, pin_memory=True

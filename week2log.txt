@@ -1,124 +1,31 @@
-Week 2 Log — CAP6415 F25 Project
+Week 2 Log - CAP6415 F25 Project  
+Student: Cale Schad (z23503021)  
+Repo: https://github.com/cschad2019/CAP6415_F25_project-FineTune-Challenging-Images  
 
-Student: Cale Schad (z23503021)
-Repo: https://github.com/cschad2019/CAP6415_F25_project-FineTune-Challenging-Images
+What I set out to do  
+- Get a clean, reproducible baseline on CIFAR-10 with ResNet-18.  
+- Define configs for baseline and targeted fine-tune.  
+- Make the project easy to run via CLI/VS Code.  
 
-What I set out to do
+Work completed  
+1) Environment & setup  
+- Created/activated a dedicated venv; verified installs from requirements.txt.  
+- Resolved PowerShell execution policy for venv activation.  
+- Added seeds to configs/CLI for reproducibility planning.  
 
-Get a clean, reproducible baseline on CIFAR-10 with ResNet-18.
+2) Code prep  
+- Reviewed src/train.py, src/eval.py, src/data.py, src/model.py for CIFAR-10 flow.  
+- Drafted configs/baseline.yaml and configs/finetune_target_class.yaml (focus_class placeholder).  
+- Added VS Code tasks/launch entries for baseline/fine-tune runs.  
 
-Identify the worst (lowest-precision) class from the confusion matrix.
+3) Validation (no full training yet)  
+- Dry-ran scripts to ensure imports/paths work on the local machine.  
+- Confirmed CIFAR-10 download path and results folder creation.  
 
-Implement a targeted fine-tune that boosts that class without hurting overall accuracy.
+Notes / Issues  
+- No blockers; ready to run the full baseline next.  
 
-Make the project easy to run (one-click in VS Code and a single Python entry point).
-
-Work completed
-1 Environment & Reproducibility
-
-Activated a dedicated venv and verified versions.
-
-Resolved PowerShell policy issues for activation (Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass).
-
-Confirmed all deps via requirements.txt; added deterministic seeds to all runs (--seed 42).
-
-2 Baseline train + eval
-
-Ran:
-
-python src/train.py --config configs/baseline.yaml --seed 42
-python src/eval.py  --config configs/baseline.yaml --seed 42
-
-
-Artifacts produced under results/:
-
-best.pt (baseline checkpoint)
-
-baseline_confusion_matrix.png
-
-samples_baseline/ (correct & wrong grids)
-
-Baseline metrics (saved in terminal and README):
-
-Overall accuracy: 0.7610
-
-Worst class by precision: cat = 0.536
-
-3 Fixes & polish
-
-Fixed an f-string formatting error in src/eval.py (float specifier) that caused a ValueError.
-
-Improved console summaries (per-class precision table, worst-class line, and overall accuracy printout).
-
-4 Targeted fine-tune (class-focused)
-
-Created configs/finetune_target_class.yaml:
-
-target.focus_class: "cat" (based on baseline)
-
-target.oversample: true, oversample_factor: 4.0
-
-train.freeze_backbone: true, epochs: 8
-
-Warm-started from the baseline checkpoint (results/best.pt).
-
-Ran:
-
-python src/train.py --config configs/finetune_target_class.yaml --seed 42
-python src/eval.py  --config configs/finetune_target_class.yaml --seed 42
-
-
-Produced:
-
-best_finetune.pt
-
-finetune_confusion_matrix.png
-
-samples_finetune/
-
-5 One-click run (professor-friendly)
-
-Added VS Code tasks and debug launch configs so the ▶ button runs the full pipeline:
-
-.vscode/tasks.json — “Baseline: Train (task)” and “Finetune: Train (task)”
-
-.vscode/launch.json — “Baseline: Train → Eval” and “Finetune: Train → Eval” (using debugpy)
-
-Added a single entry-point script:
-
-scripts/run_pipeline.py
-Usage:
-
-python scripts/run_pipeline.py --mode baseline --seed 42
-python scripts/run_pipeline.py --mode finetune --seed 42
-
-Results this week
-Run	Val Acc	Worst Class	Precision (worst)
-Baseline	0.7610	cat	0.536
-Fine-tuned	0.8404	bird	0.571
-
-Targeted improvement (cat): 0.536 → 0.804 precision (+0.268).
-
-Overall accuracy improved by ~8.0 points (from 0.7610 to 0.841).
-
-After fixing cat, the error profile shifted; bird is now the next weakest class.
-
-Files added/modified this week
-
-configs/finetune_target_class.yaml (new)
-
-src/eval.py (formatting fix + clearer prints)
-
-.vscode/tasks.json and .vscode/launch.json (new; one-click run)
-
-scripts/run_pipeline.py (new; single entry point)
-
-results/* (new artifacts for baseline and fine-tune)
-
-What’s next (Week 3 plan)
-
-Update README “Results” section with plots and the table above.
-
-(Optional) Run a short second fine-tune targeting bird to see if we can push accuracy a bit further.
-
-Start drafting the video demo outline and make sure the run instructions are crystal-clear for the grader.
+Plan for Week 3  
+- Run the full baseline training/eval on CPU.  
+- Capture confusion matrix and per-class precision; identify the weakest class.  
+- Update README/How to run with actual commands and outcomes.  

@@ -1,32 +1,27 @@
-Week 4 — Planned (Preliminary results milestone)
+Week 4 (ending Nov 30, 2025) - Log  
+Author: Cale Schad (z23503021)  
 
-Goals:
-- Lock in a stronger fine-tune pass using best week-3 settings.
-- Produce “prelim” artifacts for grading.
+What I planned:  
+- Run targeted fine-tune on the weakest class from baseline and evaluate.  
+- Refresh artifacts (confusion matrix, sample grids) and README with real numbers.  
+- Note any training/runtime observations on CPU.  
 
-Planned tasks:
-1) Training
-   - Warm start from baseline `results/best.pt`.
-   - Freeze backbone; unfreeze last block if needed (light fine-tune).
-   - 8–12 epochs, cosine LR, early stop on val acc (patience 3).
-   - Keep oversample_factor chosen in week-3.
+What I did (Nov 19 run):  
+- Fine-tuned for 8 epochs on CPU using configs/finetune_target_class.yaml.  
+  - Val acc by epoch: 0.7510, 0.7084, 0.7009, 0.7783, 0.7654, 0.7610, 0.8335, 0.8390.  
+  - Best checkpoint saved to results/best_finetune.pt (val acc 0.8390).  
+- Evaluated fine-tuned model:  
+  - Overall accuracy: 0.839.  
+  - Worst class: bird (precision 0.578).  
+  - Per-class precision: airplane 0.904, automobile 0.931, bird 0.578, cat 0.838, deer 0.883, dog 0.790, frog 0.920, horse 0.876, ship 0.933, truck 0.927.  
+  - Cat precision improved from 0.536 (baseline) → 0.838.  
+- Artifacts refreshed: results/finetune_confusion_matrix.png, results/samples_finetune/{correct_grid.png, wrong_grid.png}, results/best_finetune.pt.  
+- Updated README results section with the new metrics and before/after comparison.  
 
-2) Artifacts
-   - Save `results/best_finetune.pt`.
-   - Export `results/finetune_confusion_matrix.png` and `results/samples_finetune/*`.
-   - Generate side-by-side snippet of per-class precision (baseline vs finetune).
+Notes / Issues:  
+- Pin_memory warning on CPU is expected/harmless.  
+- Deterministic flag remains on; runs are reproducible on this hardware.  
 
-3) Repro & UX
-   - Confirm one-click VS Code tasks work on a clean venv.
-   - Finish `HOW_TO_RUN.md` (1-pager for TA).
-
-4) README
-   - Replace placeholders with the new accuracies.
-   - Brief interpretation (why bird improves; any new weakest class).
-
-To verify:
-- Bird precision increases vs week-3.
-- Overall accuracy ≥ week-3 best.
-- All scripts runnable via `scripts/run_pipeline.py` and VS Code tasks.
-
-(Outcomes to be appended after runs finish.)
+Plan for Week 5 preview:  
+- Record the demo video (repo tour, run/eval, results).  
+- Final pass on docs and logs.  

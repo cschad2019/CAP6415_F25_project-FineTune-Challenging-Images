@@ -1,5 +1,5 @@
 """
-CAP6415 F25 — Project #8
+CAP6415 F25 - Project #8
 Training entry point for CIFAR-10 with a small model (ResNet-18).
 
 Purpose:
@@ -30,7 +30,7 @@ Example:
     python src/train.py --config configs/finetune_target_class.yaml --seed 42
 """
 
-import argparse, os, math, random, yaml
+import argparse, os, random, yaml
 from pathlib import Path
 
 import numpy as np
@@ -42,14 +42,18 @@ from tqdm import tqdm
 
 from data import get_dataloaders
 from model import build_model  # your resnet18(<50 layers)
-# If your model file exposes get_model(), just change this import/name.
+
 
 # ---------------------------- utils ----------------------------
 
 def set_seed(seed: int = 42):
-    random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed) if torch.cuda.is_available() else None
-    torch.use_deterministic_algorithms(False)
+    # Use deterministic algorithms for reproducibility (may reduce speed)
+    torch.use_deterministic_algorithms(True)
+
 
 class LabelSmoothingCE(nn.Module):
     def __init__(self, eps: float = 0.0):
@@ -68,6 +72,7 @@ class LabelSmoothingCE(nn.Module):
             true_dist.scatter_(1, target.unsqueeze(1), 1 - self.eps)
         return torch.mean(torch.sum(-true_dist * log_probs, dim=-1))
 
+
 def mixup_data(x, y, alpha=0.0):
     if alpha <= 0.0:
         return x, y, y, 1.0
@@ -77,8 +82,10 @@ def mixup_data(x, y, alpha=0.0):
     y_a, y_b = y, y[indices]
     return mixed_x, y_a, y_b, float(lam)
 
+
 def mixup_criterion(criterion, pred, y_a, y_b, lam):
     return lam * criterion(pred, y_a) + (1 - lam) * criterion(pred, y_b)
+
 
 @torch.no_grad()
 def evaluate(model, loader, device):
@@ -94,14 +101,21 @@ def evaluate(model, loader, device):
         total += x.size(0)
     return correct / max(1, total), agg_loss / max(1, total)
 
+
 def plot_curves(history, out_path):
     import matplotlib.pyplot as plt
-    plt.figure(figsize=(6,4))
+    plt.figure(figsize=(6, 4))
     xs = list(range(1, len(history["train_acc"]) + 1))
     plt.plot(xs, history["train_acc"], label="train_acc")
-    plt.plot(xs, history["val_acc"],   label="val_acc")
-    plt.xlabel("epoch"); plt.ylabel("accuracy"); plt.title("Training vs Validation Accuracy")
-    plt.legend(); os.makedirs(Path(out_path).parent, exist_ok=True); plt.savefig(out_path, bbox_inches="tight"); plt.close()
+    plt.plot(xs, history["val_acc"], label="val_acc")
+    plt.xlabel("epoch")
+    plt.ylabel("accuracy")
+    plt.title("Training vs Validation Accuracy")
+    plt.legend()
+    os.makedirs(Path(out_path).parent, exist_ok=True)
+    plt.savefig(out_path, bbox_inches="tight")
+    plt.close()
+
 
 class EMA:
     def __init__(self, model, decay=0.0):
@@ -109,16 +123,20 @@ class EMA:
         self.shadow = {}
         if self.decay > 0:
             for n, p in model.named_parameters():
-                if p.requires_grad: self.shadow[n] = p.detach().clone()
+                if p.requires_grad:
+                    self.shadow[n] = p.detach().clone()
 
     def update(self, model):
-        if self.decay <= 0: return
+        if self.decay <= 0:
+            return
         for n, p in model.named_parameters():
-            if not p.requires_grad: continue
+            if not p.requires_grad:
+                continue
             self.shadow[n].mul_(self.decay).add_(p.detach(), alpha=1.0 - self.decay)
 
     def store(self, model):
-        if self.decay <= 0: return {}
+        if self.decay <= 0:
+            return {}
         backup = {}
         for n, p in model.named_parameters():
             if p.requires_grad:
@@ -127,10 +145,12 @@ class EMA:
         return backup
 
     def restore(self, model, backup):
-        if self.decay <= 0: return
+        if self.decay <= 0:
+            return
         for n, p in model.named_parameters():
             if p.requires_grad and n in backup:
                 p.data.copy_(backup[n])
+
 
 # ---------------------------- training ----------------------------
 
@@ -169,8 +189,8 @@ def main():
     criterion = LabelSmoothingCE(eps=ls)
 
     name = cfg["optim"].get("name", "adamw").lower()
-    lr   = float(cfg["optim"].get("lr", 7e-4))
-    wd   = float(cfg["optim"].get("weight_decay", 5e-4))
+    lr = float(cfg["optim"].get("lr", 7e-4))
+    wd = float(cfg["optim"].get("weight_decay", 5e-4))
     if name == "adamw":
         optimizer = AdamW(model.parameters(), lr=lr, weight_decay=wd)
     else:
@@ -181,7 +201,6 @@ def main():
     sched_name = cfg["optim"].get("scheduler", "cosine")
 
     if sched_name == "cosine":
-        # warmup (per-epoch) + cosine (per-epoch)
         main_sched = CosineAnnealingLR(optimizer, T_max=max(1, epochs - warmup_epochs))
         if warmup_epochs > 0:
             warmup = LinearLR(optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup_epochs)
@@ -193,8 +212,8 @@ def main():
 
     # options
     mixup_alpha = float(cfg["train"].get("mixup_alpha", 0.0))
-    grad_clip   = float(cfg["train"].get("grad_clip_norm", 0.0))
-    ema_decay   = float(cfg["train"].get("ema_decay", 0.0))
+    grad_clip = float(cfg["train"].get("grad_clip_norm", 0.0))
+    ema_decay = float(cfg["train"].get("ema_decay", 0.0))
     ema = EMA(model, decay=ema_decay)
 
     best_path = cfg["checkpoint"]["best_path"]
@@ -237,6 +256,10 @@ def main():
         # validate (use EMA weights if enabled)
         backup = ema.store(model) if ema_decay > 0 else {}
         val_acc, _ = evaluate(model, val_loader, device)
+        state_to_save = None
+        if val_acc > best_val:
+            best_val = val_acc
+            state_to_save = {k: v.clone() for k, v in model.state_dict().items()}
         if ema_decay > 0:
             ema.restore(model, backup)
 
@@ -249,13 +272,13 @@ def main():
         print(f"Epoch {epoch}: train_acc={train_acc:.4f}  val_acc={val_acc:.4f}  | "
               f"train_loss={running_loss/max(1,total):.4f}")
 
-        if val_acc > best_val:
-            best_val = val_acc
-            torch.save(model.state_dict(), best_path)
-            print(f"Best val acc: {best_val:.4f} | saved → {best_path}")
+        if state_to_save is not None:
+            torch.save(state_to_save, best_path)
+            print(f"Best val acc: {best_val:.4f} | saved -> {best_path}")
 
     # save curves
     plot_curves(history, cfg["output"]["curves"])
+
 
 if __name__ == "__main__":
     main()
