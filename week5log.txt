@@ -4,7 +4,7 @@ Author: Cale Schad (z23503021)
 Status: To be completed when recording the demo.
 
 Planned tasks:
-- Record 10–20 minute demo: intro/repo tour, run or show eval outputs, results walkthrough, runtime notes, shortcomings/future work.
+- Record 10-20 minute demo: intro/repo tour, run or show eval outputs, results walkthrough, runtime notes, shortcomings/future work.
 - Add video link to README and submit per instructions.
 - Final sanity check of commands on a fresh clone (optional).
 
