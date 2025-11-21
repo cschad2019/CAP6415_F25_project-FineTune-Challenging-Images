@@ -1,4 +1,4 @@
-# CAP6415 F25 — Fine-tuning a Small Model for Challenging Test Images
+# CAP6415 F25 ï¿½ Fine-tuning a Small Model for Challenging Test Images
 
 **Student:** Cale Schad (z23503021)
 
@@ -37,13 +37,13 @@ python src\eval.py --config configs\finetune_target_class.yaml
 - Checkpoints are saved from the evaluated weights (EMA-aware) so reported best metrics match the saved model.
 
 ## Files
-- `src/train.py` — training loop with mixup, EMA, checkpointing.
-- `src/eval.py` — evaluation, per-class precision, confusion matrix, sample grids.
-- `src/data.py` — CIFAR-10 loaders, optional oversampling of focus class.
-- `configs/*.yaml` — baseline and fine-tune configs.
-- `results/` — checkpoints and figures (created on run).
-- `How to run.md` — step-by-step setup and usage.
-- `week[1-5]log.txt` — weekly logs per project requirement.
+- `src/train.py`  training loop with mixup, EMA, checkpointing.
+- `src/eval.py`  evaluation, per-class precision, confusion matrix, sample grids.
+- `src/data.py`  CIFAR-10 loaders, optional oversampling of focus class.
+- `configs/*.yaml`  baseline and fine-tune configs.
+- `results/`  checkpoints and figures (created on run).
+- `How to run.md`  step-by-step setup and usage.
+- `week[1-5]log.txt`  weekly logs per project requirement.
 
 ## Results (current)
 - **Baseline (3 epochs, CPU):** overall accuracy 0.761; worst class `cat` precision 0.536. Per-class: airplane 0.800, automobile 0.928, bird 0.614, cat 0.536, deer 0.797, dog 0.669, frog 0.722, horse 0.890, ship 0.876, truck 0.904.
@@ -53,7 +53,7 @@ python src\eval.py --config configs\finetune_target_class.yaml
 
 ## Runtime (CPU)
 - Baseline (3 epochs, batch 128): ~30 minutes.
-- Fine-tune (8 epochs, batch 128): ~80–90 minutes.
+- Fine-tune (8 epochs, batch 128): ~80-90 minutes.
 
 ## Attribution
 - Model backbone: torchvision ResNet-18.
