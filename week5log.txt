@@ -1,30 +1,12 @@
-Week 5 — Planned (Finalization + Video)
+Week 5 (final, pending video)
+Author: Cale Schad (z23503021)
 
-Goals:
-- Freeze final code/results and record the demo video.
+Status: To be completed when recording the demo.
 
 Planned tasks:
-1) Final pass
-   - Re-run finetune with chosen config to confirm reproducibility.
-   - Save “final” copies in `results/finals/` (cm, samples, curves, checkpoints).
-   - Tag release `v1.0` on GitHub.
+- Record 10�20 minute demo: intro/repo tour, run or show eval outputs, results walkthrough, runtime notes, shortcomings/future work.
+- Add video link to README and submit per instructions.
+- Final sanity check of commands on a fresh clone (optional).
 
-2) Documentation
-   - README: final metrics table + two plots embedded.
-   - HOW_TO_RUN.md: verified commands, expected outputs, timings on CPU.
-
-3) Video (10–15 min)
-   - Intro (problem + repo structure) ~3–4 min.
-   - Run baseline → eval (trim) and finetune → eval (trim) ~6–8 min.
-   - Results walkthrough (confusion matrices + samples) ~3–4 min.
-   - Shortcomings + future work (e.g., CutMix/MixUp, unfreezing deeper layers, longer schedule).
-
-4) Submission
-   - Upload video (link in README).
-   - Email repo URL + video to instructor per spec.
-
-To verify:
-- Fresh clone on CPU reproduces within a few % of reported metrics.
-- Video shows start, trimmed middle, and final outputs clearly.
-
-(Will append the final numbers and links after recording.)
+Notes:
+- Baseline and fine-tune checkpoints/artifacts are already produced (see results/). Will not modify code unless a blocking issue appears during recording.
